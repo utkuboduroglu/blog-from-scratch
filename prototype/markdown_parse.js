@@ -1,6 +1,7 @@
 const marked = require('marked');
 const footnote_md_re = /\[\^(\d+)\](\:?)/g;
 const HTMLparser = require('node-html-parser');
+const { markdownProcessKaTeX } = require('./katex_search_and_replace');
 
 
 // this acts more like a dictionary (or map? idk what it's called) that takes
@@ -8,7 +9,8 @@ const HTMLparser = require('node-html-parser');
 module.exports = {
     // data is a bad naming convention;
     parseMarkdown: function (data) {
-        let parsed_head = parseMarkdownHeader(data);
+        let parsed_katex = markdownProcessKaTeX(data);
+        let parsed_head = parseMarkdownHeader(parsed_katex);
         
         // specifying file contents to parse() works!
         let res_body = marked.parse(parsed_head);

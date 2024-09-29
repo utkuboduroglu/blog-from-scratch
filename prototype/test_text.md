@@ -19,7 +19,12 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam aliquam hendrerit
 
 Nullam ex mauris, mattis in ligula a, feugiat congue lectus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Cras in mi in arcu egestas porttitor. Praesent purus mi, vestibulum blandit semper quis, sodales sed nunc. Nam nec nisl eget lectus cursus pulvinar. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean id vulputate urna. Suspendisse potenti. Curabitur lorem lectus, tincidunt eget aliquam a, ultricies ut felis. Praesent arcu justo, volutpat quis eleifend eget, vulputate id ipsum. Cras tincidunt, lectus eu sollicitudin tempor, elit lacus sollicitudin libero, eu pellentesque nunc magna nec dolor. Vivamus aliquet porttitor aliquet. Phasellus et fermentum ante. Interdum et malesuada fames ac ante ipsum primis in faucibus. In ullamcorper nisi a velit porta, eget porttitor orci euismod. 
 
+$$ v_i = x + y $$
+
 Suspendisse maximus nibh non lorem imperdiet, non ultricies eros consectetur. Etiam mattis, libero et porta elementum, elit est congue lacus, et sollicitudin enim augue id metus. Morbi enim lectus, rutrum id arcu sit amet, cursus ornare purus. Sed ex lorem, feugiat nec sapien laoreet, maximus porta lacus. Vivamus vitae nibh nulla. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Mauris sit amet sapien eget eros dignissim facilisis. Ut lorem ex, lobortis et egestas ac, feugiat et lectus. Integer sollicitudin mattis risus, eget ultrices lorem.
+\[
+\bigoplus_x V_x \otimes F(U) \mapsto V(U) \otimes \bigoplus_x F_x
+\]
 
 Ut ut tristique magna, non luctus ipsum. Nullam sem ex, pharetra non dolor eu, consectetur lobortis elit. Fusce sit amet posuere est, eu varius turpis. Proin facilisis dui eget auctor ultrices. Praesent in dolor scelerisque nisl sollicitudin condimentum. Sed commodo congue eleifend. Curabitur urna neque, finibus sit amet ex vitae, consectetur tincidunt mi. Nullam a maximus lectus. Ut a magna posuere, bibendum orci euismod, hendrerit dui.
 

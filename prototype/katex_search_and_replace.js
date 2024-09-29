@@ -1,0 +1,28 @@
+const math_block_re = /\\\[((?:(?!\\\[|\\\]).)*)\\\]/s;
+const math_inline_re = /\$\$((?:(?!\$\$).)+)\$\$/s;
+const katex = require('katex');
+
+module.exports = {
+    // we match inline & block LaTeX math environments, capture the contents,
+    // pass them through the KaTeX syntax and replace the captures with the new
+    // KaTeX tags! all before we process the markdown
+    markdownProcessKaTeX: (markdown_body) => {
+    const replacement = (match) => katex.renderToString(match);
+
+    let block_match = markdown_body.match(math_block_re);
+    while (block_match != null) {
+        markdown_body = markdown_body.replace(math_block_re, replacement(block_match[1]));
+        block_match = markdown_body.match(math_block_re);
+    }
+
+    let inline_match = markdown_body.match(math_inline_re);
+    while (inline_match != null) {
+        markdown_body = markdown_body.replace(math_inline_re, replacement(inline_match[1]));
+        inline_match = markdown_body.match(math_inline_re);
+    }
+
+    console.log("Finished processing KaTeX!");
+    return markdown_body;
+}
+
+}
