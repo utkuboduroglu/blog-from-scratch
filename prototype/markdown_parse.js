@@ -2,6 +2,8 @@ const marked = require('marked');
 const footnote_md_re = /\[\^(\d+)\](\:?)/g;
 const HTMLparser = require('node-html-parser');
 const { markdownProcessKaTeX } = require('./katex_search_and_replace');
+const { HTMLNode } = require('./html_node');
+const { markdownInsertFooter } = require('./footer_search_and_replace');
 
 
 // this acts more like a dictionary (or map? idk what it's called) that takes
@@ -9,7 +11,8 @@ const { markdownProcessKaTeX } = require('./katex_search_and_replace');
 module.exports = {
     // data is a bad naming convention;
     parseMarkdown: function (data) {
-        let parsed_katex = markdownProcessKaTeX(data);
+        let footer_md = markdownInsertFooter(data);
+        let parsed_katex = markdownProcessKaTeX(footer_md);
         let parsed_head = parseMarkdownHeader(parsed_katex);
         
         // specifying file contents to parse() works!
@@ -20,29 +23,6 @@ module.exports = {
 
 }
 
-class HTMLNode {
-  constructor(type, data=null, _class=null, id=null) {
-    this.type = type,
-    this.data = data,
-    this.class = _class,
-    this.id = id
-  }
-  
-  html_string() {
-    let opening_string = "<" + this.type;
-    let closing_string = "</" + this.type + ">";
-    if (this.class != null) {
-      opening_string += ` class="${this.class}"`;
-    }
-    if (this.id != null) {
-      opening_string += ` id="${this.id}"`;
-    }
-    opening_string += ">";
-    
-    // the tag type may not admit a closing string but for now we don't care
-    return opening_string + this.data + closing_string;
-  }
-}
 
 function headerKeyTypes(key) {
     const keymap = {

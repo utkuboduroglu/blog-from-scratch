@@ -73,7 +73,7 @@ app.use(express.static('./public'));
 app.get('/', (req, res) => {
     // header data
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
     // reading static files for use is a common task for all the files we're serving
     // TODO: put this functionality in its own function

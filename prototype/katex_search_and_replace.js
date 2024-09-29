@@ -7,22 +7,27 @@ module.exports = {
     // pass them through the KaTeX syntax and replace the captures with the new
     // KaTeX tags! all before we process the markdown
     markdownProcessKaTeX: (markdown_body) => {
-    const replacement = (match) => katex.renderToString(match);
+    const replacement = (match, mode) => katex.renderToString(match,
+        {
+            displayMode: mode,
+            strict: false,
+            throwOnError: true // TODO: remove this after debugging!!!
+        }
+    );
 
     let block_match = markdown_body.match(math_block_re);
     while (block_match != null) {
-        markdown_body = markdown_body.replace(math_block_re, replacement(block_match[1]));
+        markdown_body = markdown_body.replace(math_block_re, replacement(block_match[1], true));
         block_match = markdown_body.match(math_block_re);
     }
 
     let inline_match = markdown_body.match(math_inline_re);
     while (inline_match != null) {
-        markdown_body = markdown_body.replace(math_inline_re, replacement(inline_match[1]));
+        markdown_body = markdown_body.replace(math_inline_re, replacement(inline_match[1], false));
         inline_match = markdown_body.match(math_inline_re);
     }
 
     console.log("Finished processing KaTeX!");
     return markdown_body;
 }
-
 }
