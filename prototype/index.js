@@ -11,8 +11,7 @@ const qs = require('qs');
 const { DatabaseSync } = require('sqlite');
 const path = require('path');
 
-const marked = require('marked');
-const footnote_md_re = /\[\^(\d+)\](\:?)/g;
+const { parseMarkdown } = require('./markdown_parse');
 
 app = express();
 
@@ -63,36 +62,6 @@ function packDataToHtml(header, body) {
     return packedString;
 }
 
-function parseMarkdownHeader(rawdata) {
-    const re = /---(.*)---/s;
-    let items = rawdata.match(re)[1];
-    let tokens = items.split("\n");
-
-    let resultStringHTML = "";
-    for (let i in tokens) {
-        let line = tokens[i];
-        const delim_re = /\:/;
-        let token_pair = line.replace(delim_re, "").split(' ');
-
-        if (!token_pair[0] == '') {
-            // This should be a special method as well (for the sake of extendability)
-            resultStringHTML += `<h1 class="${token_pair[0]}">${token_pair[1]}</h1>\n`;
-        }
-    }
-
-    return resultStringHTML + rawdata.replace(re, "");
-}
-
-// data is a bad naming convention;
-function parseMarkdown(data) {
-    let parsed_head = parseMarkdownHeader(data);
-    
-    // specifying file contents to parse() works!
-    let res_body = marked.parse(parsed_head);
-
-    return res_body;
-}
-
 const math_block_re = /\\\[((?:(?!\\\[|\\\]).)*)\\\]/sg;
 const math_inline_re = /\$\$((?:(?!\$\$).)+)\$\$/gs;
 
@@ -110,6 +79,8 @@ app.get('/', (req, res) => {
     // TODO: put this functionality in its own function
     fs.readFile(mdFile, 'utf-8', (err, data) => {
       if (err) throw err;
+
+        console.log(`Serving file ${mdFile}\n`);
 
       let res_body = parseMarkdown(data);
         // console.log(res_body);
