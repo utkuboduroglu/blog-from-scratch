@@ -106,7 +106,14 @@ app.get('/post', (req, res) => {
         message += `"${queryKey}": ${query[queryKey]},\n`;
     }
     message += "}\n";
-    ft.dump_files_table().forEach(o => message += JSON.stringify(o));
+
+    if ("file_id" in query) {
+        message += JSON.stringify(
+
+            ft.get_file_info(query["file_id"])
+        );
+    }
+
     res.send(message);
 });
 

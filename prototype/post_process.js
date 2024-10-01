@@ -1,5 +1,6 @@
 const fs = require('fs');
 const sqlite = require('better-sqlite3');
+const sha1 = require('sha1');
 
 // all posts, stored as markdown entries
 const postFilesDirectory = './posts';
@@ -31,6 +32,7 @@ class FilesTable {
 
         this.db.exec(
             'CREATE TABLE IF NOT EXISTS markdown_posts (' +
+                'file_ID TEXT PRIMARY KEY,' +
                 'filename TEXT UNIQUE,' +
                 'mod_date DATE NOT NULL' +
             ');'
@@ -46,20 +48,32 @@ class FilesTable {
 
     push_file(filename) {
         const insert = this.db.prepare(
-            'INSERT INTO markdown_posts (filename, mod_date) VALUES (?, ?);'
+            'INSERT INTO markdown_posts (file_ID, filename, mod_date) VALUES (@id, @filename, @mod_date);'
         );
 
         const file_date = fs.statSync(filename)
             .mtime
             .toISOString();
 
-        insert.run(filename, file_date);
+        const file_id = sha1(filename + file_date);
+        console.log(file_id);
+
+        insert.run({
+            id: file_id,
+            filename: filename,
+            mod_date: file_date
+        });
     }
 
     dump_files_table() {
         return this.db
             .prepare('SELECT * FROM markdown_posts;')
             .all();
+    }
+
+    get_file_info(file_id) {
+        const fetch = this.db.prepare('SELECT * FROM markdown_posts WHERE file_ID == ?');
+        return fetch.get(file_id);
     }
 }
 
