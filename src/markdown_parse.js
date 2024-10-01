@@ -1,4 +1,4 @@
-const marked = require('marked');
+const marked = require('marked'); // any reason we're not using commonmark?
 const footnote_md_re = /\[\^(\d+)\](\:?)/g;
 const HTMLparser = require('node-html-parser');
 const { markdownProcessKaTeX } = require('./katex_search_and_replace');
@@ -19,8 +19,9 @@ module.exports = {
         let res_body = marked.parse(parsed_head);
 
         return res_body;
-    }
+    },
 
+    extractMarkdownHeader: extractMarkdownHeader
 }
 
 
@@ -44,6 +45,17 @@ function headerPairToHTMLTag(headerPair) {
     let keyType = headerKeyTypes(key);
 
     return new HTMLNode(keyType, value, key);
+}
+
+function extractMarkdownHeader(rawdata) {
+    const re = /---(.*)---/s;
+    let items = rawdata.match(re)[1];
+    let tokens = items
+      .split("\n")
+      .filter(item => item !== '')
+      .map(tok => tok.split(':'));
+
+    return tokens;
 }
 
 function parseMarkdownHeader(rawdata) {

@@ -11,24 +11,27 @@ const qs = require('qs');
 const { DatabaseSync } = require('sqlite');
 const path = require('path');
 const { FilesTable } = require('./post_process');
+const { Config } = require('./config');
 
 const { parseMarkdown } = require('./markdown_parse');
 
 app = express();
 
-// TODO: Hardcoded values, put these in a config file!
-const hostname = '127.0.0.1';
-const port = 8888;
+const cfg = new Config('./config.json');
+const {hostname, port} = cfg.server_properties;
 
+// TODO: This will instead be handled by the post endpoint responding with SQL queries
 // hardcoded markdown file; the actual approach would be to read a specific (possibly, again hardcoded) directory and load all markdown files into a database (in memory?)
-const mdFile = './test_text.md';
+const mdFile = './posts/test_text.md';
 
-const headerDirectory = './headers';
-const headerFiles = ['deps.html'];
+const headerDirectory = cfg.static_serve_path;
+const headerFiles = cfg.global_header_includes;
 
 // the db connection works!
 const ft = new FilesTable();
-ft.push_directory('./');
+ft.push_directory(
+    cfg.public_serve_path
+);
 
 function headersToString(dir, files) {
     var headerContent = "";
@@ -40,7 +43,7 @@ function headersToString(dir, files) {
 }
 
 // This serves the purpose, but it would be difficult to extend functionality this way
-// TODO: Use an HTML parser to create a tree structure instead!
+// TODO: USE EJS!
 function packDataToHtml(header, body) {
     /* Given header and body data, pack the contents in a form:
      * <!DOCTYPE html>
@@ -70,7 +73,7 @@ function packDataToHtml(header, body) {
 const math_block_re = /\\\[((?:(?!\\\[|\\\]).)*)\\\]/sg;
 const math_inline_re = /\$\$((?:(?!\$\$).)+)\$\$/gs;
 
-app.use(express.static('./public'));
+app.use(express.static(cfg.static_serve_path));
 
 // Each endpoint gets its own callback function, these should all be in separate source files; 
 // TODO: the entrypoint file (index.js for now) should only contain info

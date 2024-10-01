@@ -1,0 +1,48 @@
+{
+  "server_properties": {
+      "hostname": "127.0.0.1",
+      "port": 8888
+  },
+  "public_serve_path": "./public",
+  "static_serve_path": "./public",
+  "blog_post_path": "./posts",
+  "global_header_includes": [
+      "deps.html"
+  ],
+  "markdown_parse_options": {
+    "latex_engine": "KaTeX",
+    "footnotes": true,
+    "render_tikz": true
+  },
+  "sql_options": {
+    "store_in_memory": true,
+    "tables": [
+        {
+            "table_name": "post_metadata",
+            "table_schema": [
+                "post_hash",
+                "filename",
+                "modification_date"
+            ]
+        },
+        {
+            "table_name": "post_header",
+            "table_schema": [
+                "post_hash",
+                "post_title",
+                "post_specified_date",
+                "post_category",
+                "post_tags_list"
+            ]
+        },
+        {
+            "table_name": "post_blobs",
+            "table_schema": [
+                "post_hash",
+                "post_blob"
+            ]
+        }
+    ]
+  }
+}
+
