@@ -10,6 +10,7 @@ const express = require('express');
 const qs = require('qs');
 const { DatabaseSync } = require('sqlite');
 const path = require('path');
+const { FilesTable } = require('./post_process');
 
 const { parseMarkdown } = require('./markdown_parse');
 
@@ -24,6 +25,10 @@ const mdFile = './test_text.md';
 
 const headerDirectory = './headers';
 const headerFiles = ['deps.html'];
+
+// the db connection works!
+const ft = new FilesTable();
+ft.push_directory('./');
 
 function headersToString(dir, files) {
     var headerContent = "";
@@ -100,7 +105,8 @@ app.get('/post', (req, res) => {
     for (let queryKey in query) {
         message += `"${queryKey}": ${query[queryKey]},\n`;
     }
-    message += "}";
+    message += "}\n";
+    ft.dump_files_table().forEach(o => message += JSON.stringify(o));
     res.send(message);
 });
 
