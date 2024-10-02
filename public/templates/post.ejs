@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<head>
+<%- static_header.text %>
+</head>
+<body>
+<!-- include markdown preamble here!-->
+<% preamble.forEach(tr => { %>
+<<%= tr.tag_type %> class="<%= tr.label %>"><%= tr.value %></<%= tr.tag_type %>>
+<% }) %>
+
+<!-- include markdown body here!-->
+</body>
+</html>

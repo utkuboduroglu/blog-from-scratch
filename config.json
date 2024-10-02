@@ -1,48 +1,91 @@
 {
   "server_properties": {
-      "hostname": "127.0.0.1",
-      "port": 8888
+    "hostname": "127.0.0.1",
+    "port": 8888
   },
-  "public_serve_path": "./public",
-  "static_serve_path": "./public",
+  "public_serve_path": "./public/templates",
+  "endpoints": [
+    {
+      "URI": "/",
+      "request_type": "GET",
+      "resource": "home.ejs",
+      "resource_type": "EJS"
+    },
+    {
+      "URI": "/post",
+      "request_type": "GET",
+      "resource": "post.ejs",
+      "resource_type": "EJS"
+    },
+    {
+      "URI": "/about",
+      "request_type": "GET",
+      "resource": "about.ejs",
+      "resource_type": "EJS"
+    },
+    {
+      "URI": "/404",
+      "request_type": "GET",
+      "resource": "404.html",
+      "resource_type": "plain_html"
+    }
+  ],
+  "static_serve_path": "./public/static",
   "blog_post_path": "./posts",
   "global_header_includes": [
-      "deps.html"
+    "deps.html"
   ],
   "markdown_parse_options": {
     "latex_engine": "KaTeX",
     "footnotes": true,
-    "render_tikz": true
+    "render_tikz": true,
+    "capture_preamble": [
+      {
+        "field_name": "title",
+        "database_field_name": "post_title"
+      },
+      {
+        "field_name": "date",
+        "database_field_name": "post_specified_date"
+      },
+      {
+        "field_name": "category",
+        "database_field_name": "post_category"
+      },
+      {
+        "field_name": "tags",
+        "database_field_name": "post_tags_list"
+      }
+    ]
   },
   "sql_options": {
     "store_in_memory": true,
     "tables": [
-        {
-            "table_name": "post_metadata",
-            "table_schema": [
-                "post_hash",
-                "filename",
-                "modification_date"
-            ]
-        },
-        {
-            "table_name": "post_header",
-            "table_schema": [
-                "post_hash",
-                "post_title",
-                "post_specified_date",
-                "post_category",
-                "post_tags_list"
-            ]
-        },
-        {
-            "table_name": "post_blobs",
-            "table_schema": [
-                "post_hash",
-                "post_blob"
-            ]
-        }
+      {
+        "table_name": "post_metadata",
+        "table_schema": [
+          "post_hash",
+          "filename",
+          "modification_date"
+        ]
+      },
+      {
+        "table_name": "post_header",
+        "table_schema": [
+          "post_hash",
+          "post_title",
+          "post_specified_date",
+          "post_category",
+          "post_tags_list"
+        ]
+      },
+      {
+        "table_name": "post_blobs",
+        "table_schema": [
+          "post_hash",
+          "post_blob"
+        ]
+      }
     ]
   }
 }
-

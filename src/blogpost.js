@@ -2,10 +2,11 @@
 const fs = require('fs');
 const sha1 = require('sha1');
 const { extractMarkdownHeader } = require('./markdown_parse');
+const { Config } = require('./config');
 
 class BlogPost {
 
-    constructor(filename) {
+    constructor(filename, config) {
         this.filename = filename;
         // as a hacky solution, we just give ownership of the "markdown preamble"
         // to the class, though as we process the config file, this should definitely
@@ -20,12 +21,22 @@ class BlogPost {
             .toISOString();
     }
 
-    // equivalently: parse the file!
-    serve() {}
-
     post_hash() {
         return sha1(this.filename + this.modification_date());
     }
 
-    get_title() {}
+    // equivalently: parse the file!
+    serve() {
+        // For now, this is just as it is in markdown_parse.js, though we will let EJS handle the merging of preamble and body
+        // TODO: Invoke this through EJS
+        const data = fs.readFileSync(this.filename, 'utf-8');
+        return parseMarkdownHeader(data);
+    }
+
+    get_title() {
+        // we hardcoded title here, but it's possible that the config json says something otherwise...
+        // TODO(?): Decide whether it is okay to hardcode 'title' as a special keyword for the markdown preamble
+        return this.preamble
+            .filter(pair => pair[0] === 'title');
+    }
 }
