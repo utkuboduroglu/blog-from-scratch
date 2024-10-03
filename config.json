@@ -60,30 +60,65 @@
   },
   "sql_options": {
     "store_in_memory": true,
+    "access_queries": {
+        "metadata_insert": "INSERT INTO post_metadata (post_hash, filename, modification_date) VALUES (@id, @filename, @mod_date);",
+        "metadata_retrieve": "SELECT * FROM post_metadata;",
+        "retrieve_file_info": "SELECT * FROM post_metadata WHERE post_hash == ?"
+    },
     "tables": [
       {
         "table_name": "post_metadata",
         "table_schema": [
-          "post_hash",
-          "filename",
-          "modification_date"
+          {
+              "title": "post_hash",
+              "type": "TEXT PRIMARY KEY"
+          },
+          {
+              "title": "filename",
+               "type": "TEXT UNIQUE"
+          },
+          {
+              "title": "modification_date",
+               "type": "DATE"
+          }
         ]
       },
       {
         "table_name": "post_header",
         "table_schema": [
-          "post_hash",
-          "post_title",
-          "post_specified_date",
-          "post_category",
-          "post_tags_list"
+          {
+              "title": "post_hash",
+              "type": "TEXT PRIMARY KEY"
+          },
+          {
+              "title": "post_title",
+              "type": "TEXT REQUIRED"
+          },
+          {
+              "title": "post_specified_date",
+              "type": "DATE REQUIRED"
+          },
+          {
+              "title": "post_category",
+              "type": "TEXT"
+          },
+          {
+              "title": "post_tags_list",
+              "type": "TEXT"
+          }
         ]
       },
       {
         "table_name": "post_blobs",
         "table_schema": [
-          "post_hash",
-          "post_blob"
+          {
+              "title": "post_hash",
+              "type": "TEXT PRIMARY KEY"
+          },
+          {
+              "title": "post_blob",
+              "type": "BLOB REQUIRED"
+          }
         ]
       }
     ]

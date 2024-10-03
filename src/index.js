@@ -28,10 +28,7 @@ const headerDirectory = cfg.static_serve_path;
 const headerFiles = cfg.global_header_includes;
 
 // the db connection works!
-const ft = new FilesTable();
-ft.push_directory(
-    cfg.public_serve_path
-);
+const ft = new FilesTable(cfg);
 
 function headersToString(dir, files) {
     var headerContent = "";
@@ -77,6 +74,7 @@ app.use(express.static(cfg.static_serve_path));
 
 // Each endpoint gets its own callback function, these should all be in separate source files; 
 // TODO: the entrypoint file (index.js for now) should only contain info
+// TODO: Handle insertion points according to what the config says...
 // regarding what endpoints are exposed etc...
 app.get('/', (req, res) => {
     // header data
@@ -116,6 +114,9 @@ app.get('/post', (req, res) => {
             ft.get_file_info(query["file_id"])
         );
     }
+
+    // __DBG: we're dumping the tables here
+    message += JSON.stringify(ft.retrieve_all_metadata());
 
     res.send(message);
 });

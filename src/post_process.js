@@ -8,50 +8,54 @@ const postFilesDirectory = './posts';
 function markdownFilesInDirectory(pathname) {
     const filename_re = /.*\.md$/;
 
-    // fs.readdir is async!
-    const result = new Promise((resolve, reject) =>
-    {
-        fs.readdir(pathname, (err, files) => {
-            if (err) reject(err);
-            // filter the files so that they are md files
-            // hacky solution: just check that the filename ends in .md!
-            else resolve(files);
-        });
-    });
-
+    const result = fs.readdirSync(pathname, 'utf-8');
     return result
-        .then(files => files
-            .filter(filename => filename.match(filename_re) != null))
-        .catch(err => console.log(err));
+        .filter(filename => filename.match(filename_re) != null);
 }
 
 // files table should also handle caching and serving of markdown blobs!
 class FilesTable {
-    constructor() {
+    constructor(config) {
         this.db = sqlite(':memory:');
+        this.cfg = config; // we're carrying the config, but why?
 
-        this.db.exec(
-            'CREATE TABLE IF NOT EXISTS markdown_posts (' +
-                'file_ID TEXT PRIMARY KEY,' +
-                'filename TEXT UNIQUE,' +
-                'mod_date DATE NOT NULL' +
-            ');'
-        );
+        config.sql_options.tables.forEach(table_info => {
+            FilesTable.create_table(table_info, this.db);
+        });
+
+        this.push_directory(config.blog_post_path);
 
     }
 
-    async push_directory(pathname) {
-        const file_list = await markdownFilesInDirectory(pathname);
+    // We assume that the table_info provided here is
+    // consistent with the structure in the config.json file
+    static create_table(table_info, db) {
+        let query_fields = [];
+        table_info.table_schema.forEach(field => {
+            query_fields.push(`${field.title} ${field.type}`);
+        });
+
+        const query = `CREATE TABLE IF NOT EXISTS ${table_info.table_name} (${query_fields.join(',')});`;
+        db.exec(query);
+    }
+
+    push_directory(pathname) {
+        const file_list = markdownFilesInDirectory(pathname); // this await is probably screwing things for us!
         console.log(file_list);
         file_list.forEach(filename => this.push_file(filename));
+        // concatenating paths like this is probably VERY unsafe! TODO
     }
 
     push_file(filename) {
         const insert = this.db.prepare(
-            'INSERT INTO markdown_posts (file_ID, filename, mod_date) VALUES (@id, @filename, @mod_date);'
+            this.cfg.sql_options.access_queries.metadata_insert
         );
 
-        const file_date = fs.statSync(filename)
+        // the path here probably shouldn't be JUST blog_post_path! TODO(?)
+        // Although, this method is specifically ONLY for markdown files, so... fine for now?
+        const file_date = fs.statSync(
+            this.cfg.blog_post_path + '/' + filename
+        )
             .mtime
             .toISOString();
 
@@ -65,14 +69,18 @@ class FilesTable {
         });
     }
 
-    dump_files_table() {
+    retrieve_all_metadata() {
         return this.db
-            .prepare('SELECT * FROM markdown_posts;')
+            .prepare(
+                this.cfg.sql_options.access_queries.metadata_retrieve
+            )
             .all();
     }
 
     get_file_info(file_id) {
-        const fetch = this.db.prepare('SELECT * FROM markdown_posts WHERE file_ID == ?');
+        const fetch = this.db.prepare(
+            this.cfg.sql_options.access_queries.retrieve_file_info
+        );
         return fetch.get(file_id);
     }
 }
