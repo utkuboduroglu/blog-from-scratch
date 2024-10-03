@@ -4,7 +4,7 @@
   "description": "A blog template for LaTeX+TikZ+WebGPU supported content.",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "Utku Boduroglu",
   "license": "BSD-2-Clause",
