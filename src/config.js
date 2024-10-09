@@ -27,6 +27,13 @@ class Config {
         );
     }
 
+    global_header_text() {
+        const path = this.static_serve_path + "/";
+        return this.global_header_includes
+            .map(file => {return fs.readFileSync(path + file, 'utf-8');})
+            .join('');
+    }
+
 };
 
 module.exports = {Config: Config};

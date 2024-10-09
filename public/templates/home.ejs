@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<head>
+<%- static_header.text %>
+</head>
+<body>
+<!-- links to every post in database! -->
+<% posts.forEach(post => { %>
+<a href="/post?file_id=<%= post.post_hash %>"><%= post.title %></a><br>
+<% }) %>
+
+</body>
+</html>

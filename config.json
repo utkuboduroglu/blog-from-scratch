@@ -63,7 +63,8 @@
     "access_queries": {
         "metadata_insert": "INSERT INTO post_metadata (post_hash, filename, modification_date) VALUES (@id, @filename, @mod_date);",
         "metadata_retrieve": "SELECT * FROM post_metadata;",
-        "retrieve_file_info": "SELECT * FROM post_metadata WHERE post_hash == ?"
+        "retrieve_file_info": "SELECT * FROM post_metadata WHERE post_hash == ?",
+        "retrieve_file_preamble": "SELECT * FROM post_preamble WHERE post_hash == ?"
     },
     "tables": [
       {

@@ -3,11 +3,13 @@
 <%- static_header.text %>
 </head>
 <body>
+<a href="/">Go home!</a>
 <!-- include markdown preamble here!-->
 <% preamble.forEach(tr => { %>
 <<%= tr.tag_type %> class="<%= tr.label %>"><%= tr.value %></<%= tr.tag_type %>>
 <% }) %>
 
 <!-- include markdown body here!-->
+<%- body_text %>
 </body>
 </html>

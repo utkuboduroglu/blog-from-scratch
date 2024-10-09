@@ -12,6 +12,7 @@ const { DatabaseSync } = require('sqlite');
 const path = require('path');
 const { FilesTable } = require('./post_process');
 const { Config } = require('./config');
+const ejs = require('ejs');
 
 const { parseMarkdown } = require('./markdown_parse');
 
@@ -83,24 +84,35 @@ app.get('/', (req, res) => {
 
     // reading static files for use is a common task for all the files we're serving
     // TODO: put this functionality in its own function
-    fs.readFile(mdFile, 'utf-8', (err, data) => {
-      if (err) throw err;
+    const posts = ft.retrieve_all_metadata()
+        .map(p => {
+            return {
+                post_hash: p.post_hash,
+                title: p.filename // ft.get_file_info(p.post_hash)["post_title"]
+            };
+        });
 
-        console.log(`Serving file ${mdFile}\n`);
+    console.log(ft.get_file_info("16d7d79954213773e9af57381a0ea5d1a9e81d00"));
 
-      let res_body = parseMarkdown(data);
-        // console.log(res_body);
+    ejs.renderFile(
+        `${cfg.public_serve_path}/home.ejs`,
+        {
+            static_header: {
+                text: cfg.global_header_text()
+            },
+            posts: posts
+        },
+        null,
+        (err, str) => {
+            res.end(str);
+        }
+    );
 
-      res.end(
-          packDataToHtml(
-              headersToString(headerDirectory, headerFiles),
-              res_body
-          )
-      );
-  });
 })
 
 app.get('/post', (req, res) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     let query = req.query;
     let message = "Hello nerd\nYou sent me: {";
     for (let queryKey in query) {
@@ -109,16 +121,27 @@ app.get('/post', (req, res) => {
     message += "}\n";
 
     if ("file_id" in query) {
-        message += JSON.stringify(
+        const info = ft.get_file_info(query["file_id"]);
+        fs.readFile(`${cfg.blog_post_path}/${info.filename}`, 'utf-8', async (err, data) => {
+          if (err) throw err;
 
-            ft.get_file_info(query["file_id"])
-        );
+            console.log(`Serving file ${mdFile}\n`);
+
+          let res_body = await parseMarkdown(cfg, data);
+            // console.log(res_body);
+
+            // are we doing a lot of unnecessary things here?
+            // we already put the headers in with ejs...
+          res.end(
+              packDataToHtml(
+                  headersToString(headerDirectory, headerFiles),
+                  res_body
+              )
+          );
+        });
     }
 
-    // __DBG: we're dumping the tables here
-    message += JSON.stringify(ft.retrieve_all_metadata());
-
-    res.send(message);
+    // res.send(message);
 });
 
 app.listen(port, () => {

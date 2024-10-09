@@ -4,21 +4,20 @@ const HTMLparser = require('node-html-parser');
 const { markdownProcessKaTeX } = require('./katex_search_and_replace');
 const { HTMLNode } = require('./html_node');
 const { markdownInsertFooter } = require('./footer_search_and_replace');
+const ejs = require('ejs');
 
 
 // this acts more like a dictionary (or map? idk what it's called) that takes
 // function pointers to export with the given names
 module.exports = {
     // data is a bad naming convention;
-    parseMarkdown: function (data) {
+    parseMarkdown: function (config, data) {
         let footer_md = markdownInsertFooter(data);
         let parsed_katex = markdownProcessKaTeX(footer_md);
-        let parsed_head = parseMarkdownHeader(parsed_katex);
+        let parsed = parseMarkdownHeader(config, parsed_katex);
         
-        // specifying file contents to parse() works!
-        let res_body = marked.parse(parsed_head);
 
-        return res_body;
+        return parsed;
     },
 
     extractMarkdownHeader: extractMarkdownHeader
@@ -49,7 +48,11 @@ function headerPairToHTMLTag(headerPair) {
 
 function extractMarkdownHeader(rawdata) {
     const re = /---(.*)---/s;
-    let items = rawdata.match(re)[1];
+    let match = rawdata.match(re);
+    if (match == null) {
+        return null;
+    }
+    let items = match[1];
     let tokens = items
       .split("\n")
       .filter(item => item !== '')
@@ -58,23 +61,50 @@ function extractMarkdownHeader(rawdata) {
     return tokens;
 }
 
-function parseMarkdownHeader(rawdata) {
+async function parseMarkdownHeader(config, rawdata) {
     const re = /---(.*)---/s;
-    let items = rawdata.match(re)[1];
-    let tokens = items
-      .split("\n")
-      .filter(item => item !== '')
-      .map(tok => tok.split(':'));
+    const extract = extractMarkdownHeader(rawdata);
 
-    let resultStringHTML = "";
-    for (let i in tokens) {
-        let token_pair = tokens[i];
-
-        if (!token_pair[0] == '') {
-            resultStringHTML += headerPairToHTMLTag(token_pair)
-                .html_string();
-        }
+    if (extract == null) {
+        throw Error("Markdown file cannot contain empty preamble!");
     }
 
-    return resultStringHTML + rawdata.replace(re, "");
+    const preamble = extract
+        .map(p => {
+            const label = p[0];
+            const value = p[1];
+            const tag_type = headerKeyTypes(label);
+            return {
+                label: label,
+                value: value,
+                tag_type: tag_type
+            };
+        });
+    const body_text = marked.parse(rawdata.replace(re, ""));
+    const static_header = { text: config.global_header_text() };
+
+    // hardcoded path /post, though that is where we serve the markdown posts...
+    const template_filename = config.endpoints.filter(ob => ob.URI == "/post")[0].resource;
+    const path = config.public_serve_path;
+
+    const promise = new Promise((resolve, reject) => {
+            ejs.renderFile(
+            `${path}/${template_filename}`,
+            {
+                static_header: static_header,
+                preamble: preamble,
+                body_text: body_text
+            },
+            null,
+            (err, str) => {
+                if (err) {
+                    reject(err);
+                }
+
+                resolve(str);
+            }
+        );
+    });
+
+    return promise;
 }

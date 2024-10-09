@@ -35,6 +35,7 @@ class FilesTable {
             query_fields.push(`${field.title} ${field.type}`);
         });
 
+        // TODO: load this into json as well? 
         const query = `CREATE TABLE IF NOT EXISTS ${table_info.table_name} (${query_fields.join(',')});`;
         db.exec(query);
     }
@@ -46,6 +47,7 @@ class FilesTable {
         // concatenating paths like this is probably VERY unsafe! TODO
     }
 
+    // TODO: ambiguous naming! this is only for metadata!
     push_file(filename) {
         const insert = this.db.prepare(
             this.cfg.sql_options.access_queries.metadata_insert
@@ -69,6 +71,16 @@ class FilesTable {
         });
     }
 
+    push_file_header(file_id) {
+        const insert = this.db.prepare(
+            "INSERT INTO post_preamble (post_hash, post_title, post_specified_date, post_category, post_tags_list) VALUES (@hash, @title, @specified_date, @category, @tags_list);"
+        );
+
+        // why the actual fuck am I doing this? SO BAD
+        const info = this.get_file_info(file_id);
+        const filename = + `${this.cfg.blog_post_path}/${info.filename}`;
+    }
+
     retrieve_all_metadata() {
         return this.db
             .prepare(
@@ -77,11 +89,16 @@ class FilesTable {
             .all();
     }
 
+    // TODO: this is ambiguous! It only retrieves file metadata info!
     get_file_info(file_id) {
         const fetch = this.db.prepare(
             this.cfg.sql_options.access_queries.retrieve_file_info
         );
         return fetch.get(file_id);
+    }
+
+    get_file_preamble(file_id) {
+
     }
 }
 
