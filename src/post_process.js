@@ -1,6 +1,7 @@
 const fs = require('fs');
 const sqlite = require('better-sqlite3');
 const sha1 = require('sha1');
+const { extractMarkdownHeader } = require('./markdown_parse');
 
 // all posts, stored as markdown entries
 const postFilesDirectory = './posts';
@@ -43,7 +44,10 @@ class FilesTable {
     push_directory(pathname) {
         const file_list = markdownFilesInDirectory(pathname); // this await is probably screwing things for us!
         console.log(file_list);
-        file_list.forEach(filename => this.push_file(filename));
+        file_list.forEach(filename => {
+            this.push_file(filename);
+            this.push_file_preamble(filename);
+        });
         // concatenating paths like this is probably VERY unsafe! TODO
     }
 
@@ -71,14 +75,33 @@ class FilesTable {
         });
     }
 
-    push_file_header(file_id) {
+    // I'm just generally unhappy with how I handled parsing the preamble/body
+    // TODO: Do this the right way!!!! DISGUSTING
+    push_file_preamble(filename) {
+        const file_date = fs.statSync(
+            this.cfg.blog_post_path + '/' + filename
+        )
+            .mtime
+            .toISOString();
+
+        const file_id = sha1(filename + file_date);
+
+        const fp = fs.readFileSync(`${this.cfg.blog_post_path}/${filename}`, 'utf-8');
+        const preamble = extractMarkdownHeader(fp);
+
+        // yikes... please clean this up
+        const title = preamble.filter(p => p[0] == "title")[0][1];
+        const hash = file_id;
+
+        // idk how to do this to be honest with you
         const insert = this.db.prepare(
-            "INSERT INTO post_preamble (post_hash, post_title, post_specified_date, post_category, post_tags_list) VALUES (@hash, @title, @specified_date, @category, @tags_list);"
+            `INSERT INTO post_preamble (post_hash, post_title) VALUES (@hash, @title);`
         );
 
-        // why the actual fuck am I doing this? SO BAD
-        const info = this.get_file_info(file_id);
-        const filename = + `${this.cfg.blog_post_path}/${info.filename}`;
+        insert.run({
+            title: title,
+            hash: hash
+        });
     }
 
     retrieve_all_metadata() {
@@ -97,8 +120,13 @@ class FilesTable {
         return fetch.get(file_id);
     }
 
+    // TODO: do not do this hardcoded!!!! Ideally, also let BlogPost do this
     get_file_preamble(file_id) {
+        const fetch = this.db.prepare(
+            "SELECT * FROM post_preamble WHERE post_hash == ?"
+        );
 
+        return fetch.get(file_id);
     }
 }
 

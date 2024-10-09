@@ -86,9 +86,10 @@ app.get('/', (req, res) => {
     // TODO: put this functionality in its own function
     const posts = ft.retrieve_all_metadata()
         .map(p => {
+            const title = ft.get_file_preamble(p.post_hash).post_title;
             return {
                 post_hash: p.post_hash,
-                title: p.filename // ft.get_file_info(p.post_hash)["post_title"]
+                title: title // ft.get_file_info(p.post_hash)["post_title"]
             };
         });
 

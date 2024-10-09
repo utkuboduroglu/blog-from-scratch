@@ -85,7 +85,7 @@
         ]
       },
       {
-        "table_name": "post_header",
+        "table_name": "post_preamble",
         "table_schema": [
           {
               "title": "post_hash",

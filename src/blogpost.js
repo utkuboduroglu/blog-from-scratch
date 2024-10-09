@@ -13,6 +13,7 @@ class BlogPost {
         // change!
         // TODO: refactor this part in accordance to the config-specified preamble schema
         this.preamble = extractMarkdownHeader(filename);
+        console.log(this.preamble);
     }
 
     modification_date() {
@@ -23,6 +24,15 @@ class BlogPost {
 
     post_hash() {
         return sha1(this.filename + this.modification_date());
+    }
+
+    post_title() {
+        const title = this.preamble
+            .filter((k, v) => k === "title");
+        if (title == null) {
+            throw Error("No title in markdown file!");
+        }
+        return title;
     }
 
     // equivalently: parse the file!
