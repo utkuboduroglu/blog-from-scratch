@@ -1,10 +1,7 @@
 const fs = require('fs');
 const sqlite = require('better-sqlite3');
-const sha1 = require('sha1');
-const { separateMarkdownPreamble, processMarkdown } = require('./markdown_parse');
-
-// all posts, stored as markdown entries
-const postFilesDirectory = './posts';
+const { PostLoader } = require('./blogpost');
+const path = require('path');
 
 function markdownFilesInDirectory(pathname) {
     const filename_re = /.*\.md$/;
@@ -45,51 +42,54 @@ class FilesTable {
         const file_list = markdownFilesInDirectory(pathname); // this await is probably screwing things for us!
         console.log(file_list);
         file_list.forEach(filename => {
-            this.push_file(filename);
+            this.push_file_metadata(filename);
             this.push_file_preamble(filename);
+            // this.push_file_blob(filename);
         });
         // concatenating paths like this is probably VERY unsafe! TODO
     }
 
     // TODO: ambiguous naming! this is only for metadata!
-    push_file(filename) {
+    push_file_metadata(filename) {
         const insert = this.db.prepare(
             this.cfg.sql_options.access_queries.metadata_insert
         );
 
+        const post = new PostLoader(
+            path.join(this.cfg.blog_post_path, filename)
+        );
         // the path here probably shouldn't be JUST blog_post_path! TODO(?)
         // Although, this method is specifically ONLY for markdown files, so... fine for now?
-        const file_date = fs.statSync(
-            this.cfg.blog_post_path + '/' + filename
-        )
-            .mtime
-            .toISOString();
 
-        const file_id = sha1(filename + file_date);
+        const mod_date = post.modification_date();
+        const file_id = post.hash();
         console.log(file_id);
 
         insert.run({
             id: file_id,
             filename: filename,
-            mod_date: file_date
+            mod_date: mod_date
         });
     }
 
     // I'm just generally unhappy with how I handled parsing the preamble/body
     // TODO: Do this the right way!!!! DISGUSTING
     push_file_preamble(filename) {
-        const file_date = fs.statSync(
-            this.cfg.blog_post_path + '/' + filename
-        )
-            .mtime
-            .toISOString();
+        const post = new PostLoader(
+            path.join(this.cfg.blog_post_path, filename)
+        );
 
-        const file_id = sha1(filename + file_date);
+        const file_date = post.modification_date();
 
-        const fp = fs.readFileSync(`${this.cfg.blog_post_path}/${filename}`, 'utf-8');
+        const file_id = post.hash();
+
+        const fp = fs.readFileSync(
+            path.join(this.cfg.blog_post_path, filename),
+            'utf-8'
+        );
         // this will lead to multiple calculations, this is why BlogPost should own the file!!!
         // TODO: BlogPost should own file resources!
-        const preamble = processMarkdown(this.cfg, fp).tokens;
+        const preamble = post.preamble;
 
         // yikes... please clean this up
         console.log("What is this", preamble);

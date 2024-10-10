@@ -4,7 +4,7 @@ const sha1 = require('sha1');
 const { separateMarkdownPreamble, processMarkdown, parseMarkdownPreamble } = require('./markdown_parse');
 const { Config } = require('./config');
 
-class BlogPost {
+class PostLoader {
 
     constructor(filename, config) {
         this.filename = filename;
@@ -20,7 +20,7 @@ class BlogPost {
     }
 
     modification_date() {
-        return file_date = fs.statSync(this.filename)
+        return fs.statSync(this.filename)
             .mtime
             .toISOString();
     }
@@ -32,11 +32,11 @@ class BlogPost {
         });
     }
 
-    post_hash() {
+    hash() {
         return sha1(this.filename + this.modification_date());
     }
 
-    post_field(field) {
+    field(field) {
         const result = this.preamble
             .filter((k, v) => k === field);
         if (title == null) {
@@ -53,3 +53,7 @@ class BlogPost {
         return parseMarkdownHeader(data);
     }
 }
+
+module.exports = {
+    PostLoader: PostLoader
+};

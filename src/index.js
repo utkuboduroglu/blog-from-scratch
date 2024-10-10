@@ -45,7 +45,7 @@ app.get('/', (req, res) => {
 
     // TODO: serving should definitely be its own thing...
     ejs.renderFile(
-        `${cfg.public_serve_path}/home.ejs`,
+        path.join(cfg.public_serve_path, "home.ejs"),
         {
             static_header: {
                 text: cfg.global_header_text()
@@ -66,6 +66,7 @@ app.get('/post', (req, res) => {
 
     if ("file_id" in req.query) {
         const info = ft.get_file_info(req.query["file_id"]);
+        // TODO: we can do this async or through FT with BlogPost?
         fs.readFile(`${cfg.blog_post_path}/${info.filename}`, 'utf-8', async (err, data) => {
           if (err) throw err;
 
