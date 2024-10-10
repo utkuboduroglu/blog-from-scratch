@@ -1,7 +1,7 @@
 // blog post abstraction which serves as an interface for anything to do with the individual blog post entries
 const fs = require('fs');
 const sha1 = require('sha1');
-const { extractMarkdownHeader } = require('./markdown_parse');
+const { separateMarkdownPreamble, processMarkdown, parseMarkdownPreamble } = require('./markdown_parse');
 const { Config } = require('./config');
 
 class BlogPost {
@@ -12,7 +12,10 @@ class BlogPost {
         // to the class, though as we process the config file, this should definitely
         // change!
         // TODO: refactor this part in accordance to the config-specified preamble schema
-        this.preamble = extractMarkdownHeader(filename);
+        const filedata = fs.readFileSync(filename, 'utf-8');
+        const separate = processMarkdown(this.cfg,filedata);
+        this.preamble = separate.tokens;
+        this.file_body = separate.body;
         console.log(this.preamble);
     }
 
@@ -22,17 +25,24 @@ class BlogPost {
             .toISOString();
     }
 
+    serve_final_body() {
+        return parseMarkdownPreamble(this.cfg, {
+            tokens: this.preamble,
+            body: this.body
+        });
+    }
+
     post_hash() {
         return sha1(this.filename + this.modification_date());
     }
 
-    post_title() {
-        const title = this.preamble
-            .filter((k, v) => k === "title");
+    post_field(field) {
+        const result = this.preamble
+            .filter((k, v) => k === field);
         if (title == null) {
-            throw Error("No title in markdown file!");
+            throw Error("Specified field does not exist!");
         }
-        return title;
+        return result;
     }
 
     // equivalently: parse the file!
@@ -41,12 +51,5 @@ class BlogPost {
         // TODO: Invoke this through EJS
         const data = fs.readFileSync(this.filename, 'utf-8');
         return parseMarkdownHeader(data);
-    }
-
-    get_title() {
-        // we hardcoded title here, but it's possible that the config json says something otherwise...
-        // TODO(?): Decide whether it is okay to hardcode 'title' as a special keyword for the markdown preamble
-        return this.preamble
-            .filter(pair => pair[0] === 'title');
     }
 }

@@ -1,8 +1,6 @@
 const marked = require('marked'); // any reason we're not using commonmark?
-const footnote_md_re = /\[\^(\d+)\](\:?)/g;
-const HTMLparser = require('node-html-parser');
+const HTMLparser = require('node-html-parser'); // NOTE: do we want to use this class?
 const { markdownProcessKaTeX } = require('./katex_search_and_replace');
-const { HTMLNode } = require('./html_node');
 const { markdownInsertFooter } = require('./footer_search_and_replace');
 const ejs = require('ejs');
 
@@ -12,19 +10,30 @@ const ejs = require('ejs');
 module.exports = {
     // data is a bad naming convention;
     parseMarkdown: function (config, data) {
-        let footer_md = markdownInsertFooter(data);
-        let parsed_katex = markdownProcessKaTeX(footer_md);
-        let parsed = parseMarkdownHeader(config, parsed_katex);
-        
+        const separate = processMarkdown(config, data);
+        const parsed = parseMarkdownPreamble(config, separate);
 
         return parsed;
     },
 
-    extractMarkdownHeader: extractMarkdownHeader
+    // TODO: better naming
+    processMarkdown: processMarkdown,
+
+    separateMarkdownPreamble: separateMarkdownPreamble,
+    parseMarkdownPreamble: parseMarkdownPreamble
+}
+
+function processMarkdown (config, data) {
+        const footer_md = markdownInsertFooter(data);
+        const parsed_katex = markdownProcessKaTeX(footer_md);
+        const separate = separateMarkdownPreamble(parsed_katex);
+
+        return separate;
 }
 
 
 function headerKeyTypes(key) {
+    // hardcoded matching; should this be sent to the config?
     const keymap = {
         "title": "h1",
         "default": "span"
@@ -37,16 +46,7 @@ function headerKeyTypes(key) {
     }
 }
 
-// this anticipated a proper data structure, not a pair of strings in that sense 
-function headerPairToHTMLTag(headerPair) {
-    let key = headerPair[0];
-    let value = headerPair[1];
-    let keyType = headerKeyTypes(key);
-
-    return new HTMLNode(keyType, value, key);
-}
-
-function extractMarkdownHeader(rawdata) {
+function separateMarkdownPreamble(rawdata) {
     const re = /---(.*)---/s;
     let match = rawdata.match(re);
     if (match == null) {
@@ -58,18 +58,20 @@ function extractMarkdownHeader(rawdata) {
       .filter(item => item !== '')
       .map(tok => tok.split(':'));
 
-    return tokens;
+    const body = rawdata.replace(re, '');
+
+    return {
+        tokens: tokens,
+        body: body
+    };
 }
 
-async function parseMarkdownHeader(config, rawdata) {
-    const re = /---(.*)---/s;
-    const extract = extractMarkdownHeader(rawdata);
+// also, this should be called parseMarkdown
+async function parseMarkdownPreamble(config, separate) {
+    const tokens = separate.tokens;
+    const body = separate.body;
 
-    if (extract == null) {
-        throw Error("Markdown file cannot contain empty preamble!");
-    }
-
-    const preamble = extract
+    const preamble = tokens
         .map(p => {
             const label = p[0];
             const value = p[1];
@@ -80,8 +82,14 @@ async function parseMarkdownHeader(config, rawdata) {
                 tag_type: tag_type
             };
         });
-    const body_text = marked.parse(rawdata.replace(re, ""));
+
+    const body_text = marked.parse(body);
     const static_header = { text: config.global_header_text() };
+    const data = {
+        static_header: static_header,
+        preamble: preamble,
+        body_text: body_text
+    };
 
     // hardcoded path /post, though that is where we serve the markdown posts...
     const template_filename = config.endpoints.filter(ob => ob.URI == "/post")[0].resource;
@@ -89,12 +97,8 @@ async function parseMarkdownHeader(config, rawdata) {
 
     const promise = new Promise((resolve, reject) => {
             ejs.renderFile(
-            `${path}/${template_filename}`,
-            {
-                static_header: static_header,
-                preamble: preamble,
-                body_text: body_text
-            },
+            `${path}/${template_filename}`, // TODO: proper path resolution
+            data,
             null,
             (err, str) => {
                 if (err) {

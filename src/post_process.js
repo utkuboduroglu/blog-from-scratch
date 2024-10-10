@@ -1,7 +1,7 @@
 const fs = require('fs');
 const sqlite = require('better-sqlite3');
 const sha1 = require('sha1');
-const { extractMarkdownHeader } = require('./markdown_parse');
+const { separateMarkdownPreamble, processMarkdown } = require('./markdown_parse');
 
 // all posts, stored as markdown entries
 const postFilesDirectory = './posts';
@@ -87,9 +87,12 @@ class FilesTable {
         const file_id = sha1(filename + file_date);
 
         const fp = fs.readFileSync(`${this.cfg.blog_post_path}/${filename}`, 'utf-8');
-        const preamble = extractMarkdownHeader(fp);
+        // this will lead to multiple calculations, this is why BlogPost should own the file!!!
+        // TODO: BlogPost should own file resources!
+        const preamble = processMarkdown(this.cfg, fp).tokens;
 
         // yikes... please clean this up
+        console.log("What is this", preamble);
         const title = preamble.filter(p => p[0] == "title")[0][1];
         const hash = file_id;
 

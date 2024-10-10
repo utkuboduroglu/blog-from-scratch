@@ -1,3 +1,6 @@
+/* 
+ * TODO: FOR THE LOVE OF GOD LET'S JUST DO THIS THROUGH EJS
+ * */
 const footer_re = /\[\^(\d+)\](:)?/m;
 const { HTMLNode } = require('./html_node');
 

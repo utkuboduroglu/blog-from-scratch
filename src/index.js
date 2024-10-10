@@ -7,13 +7,10 @@
 // TODO: We can solve this by compartmentalizing code into separate source files
 const fs = require('fs');
 const express = require('express');
-const qs = require('qs');
-const { DatabaseSync } = require('sqlite');
-const path = require('path');
+const path = require('path'); // TODO: Use this for paths please!
 const { FilesTable } = require('./post_process');
 const { Config } = require('./config');
 const ejs = require('ejs');
-
 const { parseMarkdown } = require('./markdown_parse');
 
 app = express();
@@ -21,55 +18,8 @@ app = express();
 const cfg = new Config('./config.json');
 const {hostname, port} = cfg.server_properties;
 
-// TODO: This will instead be handled by the post endpoint responding with SQL queries
-// hardcoded markdown file; the actual approach would be to read a specific (possibly, again hardcoded) directory and load all markdown files into a database (in memory?)
-const mdFile = './posts/test_text.md';
-
-const headerDirectory = cfg.static_serve_path;
-const headerFiles = cfg.global_header_includes;
-
 // the db connection works!
 const ft = new FilesTable(cfg);
-
-function headersToString(dir, files) {
-    var headerContent = "";
-    for (let fi in files) {
-        headerContent += fs.readFileSync(path.join(dir, files[fi]), 'utf-8');
-    }
-
-    return headerContent;
-}
-
-// This serves the purpose, but it would be difficult to extend functionality this way
-// TODO: USE EJS!
-function packDataToHtml(header, body) {
-    /* Given header and body data, pack the contents in a form:
-     * <!DOCTYPE html>
-     * <head>
-     * header content
-     * </head>
-     * <body>
-     * body content
-     * </body>
-     * </html>
-     */
-
-    const packedString = 
-    `<!DOCTYPE html>
-    <head>
-    ${header}
-    </head>
-    <body>
-    ${body}
-    </body>
-    </html>
-    `; 
-
-    return packedString;
-}
-
-const math_block_re = /\\\[((?:(?!\\\[|\\\]).)*)\\\]/sg;
-const math_inline_re = /\$\$((?:(?!\$\$).)+)\$\$/gs;
 
 app.use(express.static(cfg.static_serve_path));
 
@@ -93,8 +43,7 @@ app.get('/', (req, res) => {
             };
         });
 
-    console.log(ft.get_file_info("16d7d79954213773e9af57381a0ea5d1a9e81d00"));
-
+    // TODO: serving should definitely be its own thing...
     ejs.renderFile(
         `${cfg.public_serve_path}/home.ejs`,
         {
@@ -114,35 +63,20 @@ app.get('/', (req, res) => {
 app.get('/post', (req, res) => {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    let query = req.query;
-    let message = "Hello nerd\nYou sent me: {";
-    for (let queryKey in query) {
-        message += `"${queryKey}": ${query[queryKey]},\n`;
-    }
-    message += "}\n";
 
-    if ("file_id" in query) {
-        const info = ft.get_file_info(query["file_id"]);
+    if ("file_id" in req.query) {
+        const info = ft.get_file_info(req.query["file_id"]);
         fs.readFile(`${cfg.blog_post_path}/${info.filename}`, 'utf-8', async (err, data) => {
           if (err) throw err;
 
-            console.log(`Serving file ${mdFile}\n`);
+          const res_body = await parseMarkdown(cfg, data);
 
-          let res_body = await parseMarkdown(cfg, data);
-            // console.log(res_body);
-
-            // are we doing a lot of unnecessary things here?
-            // we already put the headers in with ejs...
           res.end(
-              packDataToHtml(
-                  headersToString(headerDirectory, headerFiles),
                   res_body
-              )
           );
         });
     }
 
-    // res.send(message);
 });
 
 app.listen(port, () => {
