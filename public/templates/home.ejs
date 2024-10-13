@@ -6,12 +6,17 @@
 <h1>Landing page</h1>
 Welcome to my humble page! Check out some of my posts below!
 <br>
-<div>
+<ul>
     <!-- links to every post in database! -->
     <% posts.forEach(post => { %>
-    <a class="post-link" href="/post?file_id=<%= post.post_hash %>"><%= post.title %></a><br>
+    <li>
+        <div class="post-entry">
+            <%= post.specified_date %>
+            <a class="post-link" href="/post?file_id=<%= post.post_hash %>"><%= post.title %></a><br>
+        </div>
+    </li>
     <% }) %>
-</div>
+</ul>
 
 </body>
 </html>

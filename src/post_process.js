@@ -1,6 +1,6 @@
 const fs = require('fs');
 const sqlite = require('better-sqlite3');
-const { PostLoader } = require('./blogpost');
+const { PostLoader } = require('./postloader');
 const path = require('path');
 
 function markdownFilesInDirectory(pathname) {
@@ -9,6 +9,64 @@ function markdownFilesInDirectory(pathname) {
     const result = fs.readdirSync(pathname, 'utf-8');
     return result
         .filter(filename => filename.match(filename_re) != null);
+}
+
+class DatabaseQuery {
+
+}
+
+// this may as well just be [PostTable]...
+class PostDatabase {
+    // tables : &[PostTable]
+    // retrieve_table : (&self, table_name: &str) -> &PostTable
+    // evaluate_query : (&mut self, query: DatabaseQuery) -> Result<Data, Err>
+}
+
+class PostTable {
+    // schema : TableSchema
+    // get_entry : (&self, hash: &str) -> Result<PostEntry, Err> (what is this type?)
+    // get_all : (&self, condition: &str) -> Result<Vec<PostEntry>, Err> (what is this type?)
+
+    // push_entry : (&mut self, &TableConfig, &PostFile) -> Result<(), Err>
+    push_entry(table_config, file) {
+        // schema is a "lambda" that maps a file object to the fields
+        // the table wants specifically; for example:
+        // if this instance of PostTable keeps track of file metadata,
+        // it maps file to an object of the sort {filename, modification_date}
+        // if it keeps track of preamble, it sends {title, specified_date, tags, category, ...}
+        const parameters = this.schema(file);
+        const defined_fields = table_config.fields
+            .filter(field => parameters[field.key] !== undefined);
+
+        const required_fields = table_config.fields
+            .filter(field => field.required === true);
+        const required_fields_satisfied = required_fields
+            .every(f => defined_fields.contains(f));
+
+        if (!required_fields_satisfied) {
+            throw Error({
+                message: "File does not contain required fields!",
+                unsatisfied_fields: required_fields
+                    .filter(f => !defined_fields.contains(f))
+            });
+        }
+
+        let data = {};
+        defined_fields.forEach(field => {
+            data[field.value] = parameters[field.key];
+        });
+
+        // this call either throws or returns a null result, which we don't
+        // care about
+        const _ = this.parent.evaluate_query(
+            new DatabaseQuery({
+                type: "insert",
+                table_name: table_config.name,
+                fields: defined_fields.map(f => f.value)
+            }),
+            data
+        );
+    }
 }
 
 // files table should also handle caching and serving of markdown blobs!
@@ -50,6 +108,8 @@ class FilesTable {
     }
 
     // TODO: ambiguous naming! this is only for metadata!
+    // TODO: Also, all push methods can be generalized to a single push method,
+    // and a schema -> datafields method. 
     push_file_metadata(filename) {
         const insert = this.db.prepare(
             this.cfg.sql_options.access_queries.metadata_insert
@@ -91,19 +151,28 @@ class FilesTable {
         // TODO: BlogPost should own file resources!
         const preamble = post.preamble;
 
-        // yikes... please clean this up
+        // TODO: match these based on what's specified in the config
         console.log("What is this", preamble);
         const title = preamble.filter(p => p[0] == "title")[0][1];
+        // TODO: date will always be specified, fix
+        let specified_date = preamble.filter(p => p[0] == "date")[0];
+        if (specified_date == undefined) {
+            specified_date = new Date('01 January 1970 12:00 UTC').toISOString(); 
+        } else {
+            specified_date = specified_date[1];
+        }
         const hash = file_id;
 
+        // We implemented this; please use that instead TODO
         // idk how to do this to be honest with you
         const insert = this.db.prepare(
-            `INSERT INTO post_preamble (post_hash, post_title) VALUES (@hash, @title);`
+            `INSERT INTO post_preamble (post_hash, post_title, post_specified_date) VALUES (@hash, @title, @specified_date);`
         );
 
         insert.run({
             title: title,
-            hash: hash
+            hash: hash,
+            specified_date: specified_date
         });
     }
 
@@ -131,6 +200,20 @@ class FilesTable {
 
         return fetch.get(file_id);
     }
+}
+
+class PostFile {
+    constructor(ft, hash) {
+        this.hash = hash;
+        this.ft = ft;
+    }
+
+    get_content() {}
+    get_filename() {}
+    get_modification_date() {}
+
+    // should be guaranteed to never throw on required fields
+    get_field(field) {}
 }
 
 module.exports = {

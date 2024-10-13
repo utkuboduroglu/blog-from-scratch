@@ -36,10 +36,13 @@ app.get('/', (req, res) => {
     // TODO: put this functionality in its own function
     const posts = ft.retrieve_all_metadata()
         .map(p => {
-            const title = ft.get_file_preamble(p.post_hash).post_title;
+            const preamble = ft.get_file_preamble(p.post_hash);
+            console.log("preamb:", preamble);
+
             return {
                 post_hash: p.post_hash,
-                title: title // ft.get_file_info(p.post_hash)["post_title"]
+                title: preamble.post_title, // ft.get_file_info(p.post_hash)["post_title"]
+                specified_date: preamble.post_specified_date
             };
         });
 
@@ -66,6 +69,12 @@ app.get('/post', (req, res) => {
 
     if ("file_id" in req.query) {
         const info = ft.get_file_info(req.query["file_id"]);
+        if (info == undefined) {
+            res.statusCode = 400;
+            res.end("bad request");
+            return;
+        }
+
         // TODO: we can do this async or through FT with BlogPost?
         fs.readFile(`${cfg.blog_post_path}/${info.filename}`, 'utf-8', async (err, data) => {
           if (err) throw err;
