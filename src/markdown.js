@@ -1,8 +1,8 @@
 const marked = require('marked'); // any reason we're not using commonmark?
-const HTMLparser = require('node-html-parser'); // NOTE: do we want to use this class?
-const { markdownProcessKaTeX } = require('./katex_search_and_replace');
-const { markdownInsertFooter } = require('./footer_search_and_replace');
+const { markdownProcessKaTeX } = require('./markdown.katex');
+const { markdownInsertFooter } = require('./markdown.footer');
 const ejs = require('ejs');
+const path = require('path'); 
 
 
 // this acts more like a dictionary (or map? idk what it's called) that takes
@@ -23,11 +23,14 @@ module.exports = {
     parseMarkdownPreamble: parseMarkdownPreamble
 }
 
+// TODO: this function should be obsoleted! markdown can only be get by file
+// ownership
 function processMarkdown (config, data) {
         const footer_md = markdownInsertFooter(data);
         const parsed_katex = markdownProcessKaTeX(footer_md);
         const separate = separateMarkdownPreamble(parsed_katex);
 
+        console.log("[WARNING] processMarkdown called!")
         return separate;
 }
 
@@ -93,11 +96,11 @@ async function parseMarkdownPreamble(config, separate) {
 
     // hardcoded path /post, though that is where we serve the markdown posts...
     const template_filename = config.endpoints.filter(ob => ob.URI == "/post")[0].resource;
-    const path = config.public_serve_path;
+    const serve_path = config.public_serve_path;
 
     const promise = new Promise((resolve, reject) => {
             ejs.renderFile(
-            `${path}/${template_filename}`, // TODO: proper path resolution
+            path.join(serve_path, template_filename),
             data,
             null,
             (err, str) => {

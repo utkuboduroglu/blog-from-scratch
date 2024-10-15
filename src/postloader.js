@@ -1,7 +1,7 @@
 // blog post abstraction which serves as an interface for anything to do with the individual blog post entries
 const fs = require('fs');
 const sha1 = require('sha1');
-const { separateMarkdownPreamble, processMarkdown, parseMarkdownPreamble } = require('./markdown_parse');
+const { separateMarkdownPreamble, processMarkdown, parseMarkdownPreamble } = require('./markdown');
 const { Config } = require('./config');
 
 class PostLoader {
@@ -12,8 +12,9 @@ class PostLoader {
         // to the class, though as we process the config file, this should definitely
         // change!
         // TODO: refactor this part in accordance to the config-specified preamble schema
+        // NOTE: Can we do all of this async? i.e. is it possible to still call processMarkdown with an async function?
         const filedata = fs.readFileSync(filename, 'utf-8');
-        const separate = processMarkdown(this.cfg,filedata);
+        const separate = processMarkdown(this.cfg, filedata);
         this.preamble = separate.tokens;
         this.file_body = separate.body;
         console.log(this.preamble);
@@ -38,11 +39,14 @@ class PostLoader {
 
     field(field) {
         const result = this.preamble
-            .filter((k, v) => k === field);
-        if (title == null) {
-            throw Error("Specified field does not exist!");
+            .filter(pair => pair[0] == field);
+        if (result == null || result.length == 0) { 
+            const err = new Error("Missing field!");
+            err.missingField = field;
+            throw err;
         }
-        return result;
+
+        return result[result.length - 1][1];
     }
 
     // equivalently: parse the file!

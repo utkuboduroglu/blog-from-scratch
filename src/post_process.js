@@ -23,6 +23,7 @@ class PostDatabase {
 }
 
 class PostTable {
+    // constructor(schema) {}
     // schema : TableSchema
     // get_entry : (&self, hash: &str) -> Result<PostEntry, Err> (what is this type?)
     // get_all : (&self, condition: &str) -> Result<Vec<PostEntry>, Err> (what is this type?)
@@ -44,11 +45,14 @@ class PostTable {
             .every(f => defined_fields.contains(f));
 
         if (!required_fields_satisfied) {
-            throw Error({
-                message: "File does not contain required fields!",
+            // NOTE: is this a sensible way of creating errors?
+            const err = new Error("File does not contain required fields!");
+            Object.assign(err,
+            {
                 unsatisfied_fields: required_fields
                     .filter(f => !defined_fields.contains(f))
             });
+            throw err;
         }
 
         let data = {};
@@ -59,27 +63,32 @@ class PostTable {
         // this call either throws or returns a null result, which we don't
         // care about
         const _ = this.parent.evaluate_query(
-            new DatabaseQuery({
+            // we just pass the prototype; ideally, I would like
+            // this to be the exact same thing as DatabaseQuery,
+            // but js is not really happy about that
+            {
                 type: "insert",
                 table_name: table_config.name,
                 fields: defined_fields.map(f => f.value)
-            }),
+            },
             data
         );
     }
 }
 
 // files table should also handle caching and serving of markdown blobs!
+// inherit PostTable? (and also rename both?)
 class FilesTable {
     constructor(config) {
         this.db = sqlite(':memory:');
         this.cfg = config; // we're carrying the config, but why?
 
-        config.sql_options.tables.forEach(table_info => {
-            FilesTable.create_table(table_info, this.db);
+        config.sql_options.tables.forEach(table => {
+            FilesTable.create_table(table, this.db);
         });
 
         this.push_directory(config.blog_post_path);
+        console.log("Available files: ", this.retrieve_all_metadata());
 
     }
 
@@ -88,92 +97,87 @@ class FilesTable {
     static create_table(table_info, db) {
         let query_fields = [];
         table_info.table_schema.forEach(field => {
+            // we casually exploit the query syntax of SQL here
             query_fields.push(`${field.title} ${field.type}`);
         });
 
-        // TODO: load this into json as well? 
+        // TODO: either inherit PostTable of just port functionality to that
+        // class to instead use the query method we created there
+        // although... it works in a hacky way; this could be low priority
         const query = `CREATE TABLE IF NOT EXISTS ${table_info.table_name} (${query_fields.join(',')});`;
         db.exec(query);
     }
 
     push_directory(pathname) {
-        const file_list = markdownFilesInDirectory(pathname); // this await is probably screwing things for us!
-        console.log(file_list);
+        const file_list = markdownFilesInDirectory(pathname); 
+
         file_list.forEach(filename => {
-            this.push_file_metadata(filename);
-            this.push_file_preamble(filename);
-            // this.push_file_blob(filename);
+            const post = new PostLoader(
+                path.join(this.cfg.blog_post_path, filename)
+            );
+
+            this.push_file(post);
         });
-        // concatenating paths like this is probably VERY unsafe! TODO
     }
 
-    // TODO: ambiguous naming! this is only for metadata!
+    push_file(post) {
+        try {
+            // TODO: do this according to what the config.json says
+            this.push_file_preamble(post);
+            this.push_file_metadata(post);
+            // this.push_file_blob(filename);
+        } catch(err) {
+            console.log(`[${post.filename}]: ${err}`);
+            if (err.missingField !== undefined) {
+                console.log(`${post.filename} is missing field ${err.missingField}, not including in list\n`);
+            } else {
+                throw err;
+            }
+            return;
+        }
+    }
+
     // TODO: Also, all push methods can be generalized to a single push method,
     // and a schema -> datafields method. 
-    push_file_metadata(filename) {
-        const insert = this.db.prepare(
+    push_file_metadata(post) {
+        const table_query = this.db.prepare(
             this.cfg.sql_options.access_queries.metadata_insert
         );
 
-        const post = new PostLoader(
-            path.join(this.cfg.blog_post_path, filename)
-        );
-        // the path here probably shouldn't be JUST blog_post_path! TODO(?)
-        // Although, this method is specifically ONLY for markdown files, so... fine for now?
-
         const mod_date = post.modification_date();
         const file_id = post.hash();
-        console.log(file_id);
 
-        insert.run({
+        const query_data = {
             id: file_id,
-            filename: filename,
+            filename: post.filename,
             mod_date: mod_date
-        });
+        };
+
+        table_query.run(query_data);
     }
 
-    // I'm just generally unhappy with how I handled parsing the preamble/body
-    // TODO: Do this the right way!!!! DISGUSTING
-    push_file_preamble(filename) {
-        const post = new PostLoader(
-            path.join(this.cfg.blog_post_path, filename)
-        );
-
-        const file_date = post.modification_date();
-
-        const file_id = post.hash();
-
-        const fp = fs.readFileSync(
-            path.join(this.cfg.blog_post_path, filename),
-            'utf-8'
-        );
-        // this will lead to multiple calculations, this is why BlogPost should own the file!!!
-        // TODO: BlogPost should own file resources!
+    // TODO: This is fine for now (as it is a required method), but
+    // port it to PostTable.push_entry whenever ready
+    push_file_preamble(post) {
         const preamble = post.preamble;
 
-        // TODO: match these based on what's specified in the config
-        console.log("What is this", preamble);
-        const title = preamble.filter(p => p[0] == "title")[0][1];
-        // TODO: date will always be specified, fix
-        let specified_date = preamble.filter(p => p[0] == "date")[0];
-        if (specified_date == undefined) {
-            specified_date = new Date('01 January 1970 12:00 UTC').toISOString(); 
-        } else {
-            specified_date = specified_date[1];
-        }
-        const hash = file_id;
+        // TODO: "title" and "date" should instead be passed according to
+        // what's specified in the config
+        const title = post.field("title");
+        const specified_date = new Date(post.field("date")).toISOString();
+        const hash = post.hash();
 
-        // We implemented this; please use that instead TODO
-        // idk how to do this to be honest with you
-        const insert = this.db.prepare(
+        const table_query = this.db.prepare(
             `INSERT INTO post_preamble (post_hash, post_title, post_specified_date) VALUES (@hash, @title, @specified_date);`
         );
 
-        insert.run({
-            title: title,
+        const query_data = {
             hash: hash,
+            title: title,
             specified_date: specified_date
-        });
+        };
+
+        table_query.run(query_data);
     }
 
     retrieve_all_metadata() {
@@ -184,15 +188,14 @@ class FilesTable {
             .all();
     }
 
-    // TODO: this is ambiguous! It only retrieves file metadata info!
-    get_file_info(file_id) {
-        const fetch = this.db.prepare(
+    get_file_metadata(file_id) {
+        const db_query = this.db.prepare(
             this.cfg.sql_options.access_queries.retrieve_file_info
         );
-        return fetch.get(file_id);
+        return db_query.get(file_id);
     }
 
-    // TODO: do not do this hardcoded!!!! Ideally, also let BlogPost do this
+    // TODO: do not do this hardcoded!!!! Ideally, also let PostTable do this
     get_file_preamble(file_id) {
         const fetch = this.db.prepare(
             "SELECT * FROM post_preamble WHERE post_hash == ?"
@@ -202,19 +205,6 @@ class FilesTable {
     }
 }
 
-class PostFile {
-    constructor(ft, hash) {
-        this.hash = hash;
-        this.ft = ft;
-    }
-
-    get_content() {}
-    get_filename() {}
-    get_modification_date() {}
-
-    // should be guaranteed to never throw on required fields
-    get_field(field) {}
-}
 
 module.exports = {
     FilesTable: FilesTable,

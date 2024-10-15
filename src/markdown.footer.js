@@ -10,7 +10,7 @@ const replacement = (match, is_bottom) => {
     // If it is not at the bottom, wrap it around a <sup> environment
     const position = is_bottom ? "bottom" : "top";
     const link     = is_bottom ? "top" : "bottom";
-    let node = new HTMLNode("a", `[${match}]`, null, `${match}-${position}`);
+    const node = new HTMLNode("a", `[${match}]`, null, `${match}-${position}`);
     node.href = `#${match}-${link}`;
 
     if (is_bottom) {
