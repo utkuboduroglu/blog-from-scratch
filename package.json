@@ -18,6 +18,7 @@
     "katex": "^0.16.11",
     "marked": "^14.1.2",
     "marked-footnote": "^1.2.4",
+    "mock-fs": "^5.4.0",
     "node-html-parser": "^6.1.13",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",

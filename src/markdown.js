@@ -13,6 +13,7 @@ module.exports = {
         const separate = processMarkdown(config, data);
         const parsed = parseMarkdownPreamble(config, separate);
 
+        console.log("[WARNING] parseMarkdown called!")
         return parsed;
     },
 
@@ -34,8 +35,6 @@ function processMarkdown (config, data) {
 
         const separate = separateMarkdownPreamble(parsed_katex);
 
-        // TODO: find a library like pino to handle this stuff
-        console.log("[WARNING] processMarkdown called!")
         return separate;
 }
 
@@ -56,29 +55,33 @@ function headerKeyTypes(key) {
 
 function separateMarkdownPreamble(rawdata) {
     const re = /---(.*)---/s;
-    let match = rawdata.match(re);
+    const match = rawdata.match(re);
+
+    // TODO: why are we returning null? We should throw here instead
     if (match == null) {
         return null;
     }
-    let items = match[1];
-    let tokens = items
+
+    const items = match[1];
+    const preamble = items
       .split("\n")
       .filter(item => item !== '')
     // calling split with that specific regex pattern allows us to
     // only split at the first :, which is useful for specifying dates
-      .map(tok => tok.split(/:(.*)/s));
+      .map(tok => tok.split(/:(.*)/s))
+      .map(tok => [tok[0], tok[1].trim()]);
 
     const body = rawdata.replace(re, '');
 
     return {
-        tokens: tokens,
+        preamble: preamble,
         body: body
     };
 }
 
 // also, this should be called parseMarkdown
 async function parseMarkdownPreamble(config, separate) {
-    const tokens = separate.tokens;
+    const tokens = separate.preamble;
     const body = separate.body;
 
     const preamble = tokens

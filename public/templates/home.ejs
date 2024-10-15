@@ -4,10 +4,11 @@
 </head>
 <body>
 <h1>Landing page</h1>
+<%- global.about %>
 Welcome to my humble page! Check out some of my posts below!
 <br>
 <ul>
-    <!-- links to every post in database! -->
+    <%# links to every post in database! %>
     <% posts.forEach(post => { %>
     <li>
         <div class="post-entry">

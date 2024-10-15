@@ -18,7 +18,7 @@ class PostLoader {
         console.log("Processing markdown for:", filename);
         const separate = processMarkdown(this.cfg, filedata);
 
-        this.preamble = separate.tokens;
+        this.preamble = separate.preamble;
         this.file_body = separate.body;
         console.log(this.preamble);
     }
@@ -31,7 +31,7 @@ class PostLoader {
 
     serve() {
         return parseMarkdownPreamble(this.cfg, {
-            tokens: this.preamble,
+            preamble: this.preamble,
             body: this.body
         });
     }
@@ -41,6 +41,10 @@ class PostLoader {
     }
 
     field(field) {
+        if (typeof field !== 'string') {
+            throw new TypeError("field is not a string!");
+        }
+
         const result = this.preamble
             .filter(pair => pair[0] == field);
 

@@ -1,19 +1,16 @@
-/* NOTES: 
- * * Variable names are not descriptive enough/generally not indicative of their purpose
- * * A lot of the computation is done through string buffering/text manipulation instead of
- * interfacing with their proper data structures (e.g. trees for HTML)
- * */
 // It's very hard to keep track of the purpose of each of these imports;
 // TODO: We can solve this by compartmentalizing code into separate source files
 const fs = require('fs');
-const express = require('express');
 const path = require('path');
+
+const { parseMarkdown } = require('./markdown');
+const ejs = require('ejs');
+
+const express = require('express');
+app = express();
+
 const { FilesTable } = require('./post_process');
 const { Config } = require('./config');
-const ejs = require('ejs');
-const { parseMarkdown } = require('./markdown');
-
-app = express();
 
 const cfg = new Config('./config.json');
 const {hostname, port} = cfg.server_properties;
@@ -91,7 +88,6 @@ app.get('/post', (req, res) => {
           if (err) throw err;
 
           const res_body = await parseMarkdown(cfg, data);
-
           res.end(res_body);
         });
     }
