@@ -8,13 +8,16 @@ class PostLoader {
 
     constructor(filename, config) {
         this.filename = filename;
-        // as a hacky solution, we just give ownership of the "markdown preamble"
-        // to the class, though as we process the config file, this should definitely
-        // change!
-        // TODO: refactor this part in accordance to the config-specified preamble schema
-        // NOTE: Can we do all of this async? i.e. is it possible to still call processMarkdown with an async function?
+        this.cfg = config;
+
+        // TODO: refactor this part in accordance to the config-specified
+        // preamble schema NOTE: Can we do all of this async? i.e. is it
+        // possible to still call processMarkdown with an async function?
         const filedata = fs.readFileSync(filename, 'utf-8');
+
+        console.log("Processing markdown for:", filename);
         const separate = processMarkdown(this.cfg, filedata);
+
         this.preamble = separate.tokens;
         this.file_body = separate.body;
         console.log(this.preamble);
@@ -26,7 +29,7 @@ class PostLoader {
             .toISOString();
     }
 
-    serve_final_body() {
+    serve() {
         return parseMarkdownPreamble(this.cfg, {
             tokens: this.preamble,
             body: this.body
@@ -40,6 +43,7 @@ class PostLoader {
     field(field) {
         const result = this.preamble
             .filter(pair => pair[0] == field);
+
         if (result == null || result.length == 0) { 
             const err = new Error("Missing field!");
             err.missingField = field;
@@ -47,14 +51,6 @@ class PostLoader {
         }
 
         return result[result.length - 1][1];
-    }
-
-    // equivalently: parse the file!
-    serve() {
-        // For now, this is just as it is in markdown_parse.js, though we will let EJS handle the merging of preamble and body
-        // TODO: Invoke this through EJS
-        const data = fs.readFileSync(this.filename, 'utf-8');
-        return parseMarkdownHeader(data);
     }
 }
 

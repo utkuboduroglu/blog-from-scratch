@@ -180,12 +180,26 @@ class FilesTable {
         table_query.run(query_data);
     }
 
-    retrieve_all_metadata() {
-        return this.db
+    retrieve_all_metadata(sort=true) {
+        const result = this.db
             .prepare(
                 this.cfg.sql_options.access_queries.metadata_retrieve
             )
             .all();
+
+        if (sort) {
+            result.sort((a, b) => {
+                // these probably shouldn't be called modification date and
+                // should depend on what config.json says
+                // FIX: this does not sort by date, it seems alphabetical
+                const left = new Date(a.modification_date);
+                const right = new Date(b.modification_date);
+
+                return right - left;
+            });
+        }
+
+        return result;
     }
 
     get_file_metadata(file_id) {

@@ -24,12 +24,17 @@ module.exports = {
 }
 
 // TODO: this function should be obsoleted! markdown can only be get by file
-// ownership
+// ownership (the only call to this function is by postloader ownership, but still)
 function processMarkdown (config, data) {
         const footer_md = markdownInsertFooter(data);
+        console.log("\tProcessed footers");
+
         const parsed_katex = markdownProcessKaTeX(footer_md);
+        console.log("\tProcessed KaTeX");
+
         const separate = separateMarkdownPreamble(parsed_katex);
 
+        // TODO: find a library like pino to handle this stuff
         console.log("[WARNING] processMarkdown called!")
         return separate;
 }
@@ -59,7 +64,9 @@ function separateMarkdownPreamble(rawdata) {
     let tokens = items
       .split("\n")
       .filter(item => item !== '')
-      .map(tok => tok.split(':'));
+    // calling split with that specific regex pattern allows us to
+    // only split at the first :, which is useful for specifying dates
+      .map(tok => tok.split(/:(.*)/s));
 
     const body = rawdata.replace(re, '');
 

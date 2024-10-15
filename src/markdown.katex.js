@@ -1,3 +1,6 @@
+/* TODO: instead of simply replacing matches for inline/block math,
+ * processKaTeX should take a callback in place of katex.renderToString
+ * to serve more of an interactive object in its place */
 const math_block_re = /\\\[((?:(?!\\\[|\\\]).)*)\\\]/s;
 const math_inline_re = /\$\$((?:(?!\$\$).)+)\$\$/s;
 const katex = require('katex');
@@ -27,7 +30,6 @@ module.exports = {
             inline_match = markdown_body.match(math_inline_re);
         }
 
-        console.log("Finished processing KaTeX!");
         return markdown_body;
     }
 }

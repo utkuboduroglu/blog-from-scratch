@@ -33,7 +33,7 @@
   "static_serve_path": "./public/static",
   "blog_post_path": "./posts",
   "global_header_includes": [
-    "deps.html"
+    "dependency_header.html"
   ],
   "markdown_parse_options": {
     "latex_engine": "KaTeX",
@@ -42,19 +42,23 @@
     "capture_preamble": [
       {
         "field_name": "title",
-        "database_field_name": "post_title"
+        "database_field_name": "post_title",
+        "required": true
       },
       {
         "field_name": "date",
-        "database_field_name": "post_specified_date"
+        "database_field_name": "post_specified_date",
+        "required": true
       },
       {
         "field_name": "category",
-        "database_field_name": "post_category"
+        "database_field_name": "post_category",
+        "required": false
       },
       {
         "field_name": "tags",
-        "database_field_name": "post_tags_list"
+        "database_field_name": "post_tags_list",
+        "required": false
       }
     ]
   },

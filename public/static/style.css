@@ -28,3 +28,10 @@ a:visited:hover {
     background-color: #59a689;
     color: white;
 }
+
+div.bounded_body {
+    box-shadow: 10px 3px 10px gray;
+    padding: 15px;
+    outline: 1px;
+    outline-style: outset;
+}
